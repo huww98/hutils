@@ -24,7 +24,7 @@ def get_timestamp(fmt: str = '%Y%m%d_%H%M%S') -> str:
 
 def get_argparser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', required=True,
+    parser.add_argument('-c', '--config', default='configs/config.jsonnet',
                         help='Path to config file')
     parser.add_argument('-x', '--ext-config', nargs='*',
                         default=[], help='Extra jsonnet config')
