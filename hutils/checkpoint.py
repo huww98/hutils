@@ -1,11 +1,9 @@
-import os
-import shutil
-from pathlib import Path
 import logging
-from torch import Tensor
-from collections import OrderedDict
+import os
+from pathlib import Path
 
 import torch
+import torch.distributed
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +24,7 @@ class CheckpointManager:
         :param experiment_dir:
         :param keep_interval:
         :param filename:
-        :param milestone: 用来控制从哪个epoch开始，进行interval式保存
+        :param milestone: 用来控制从哪个step开始，进行interval式保存
         """
         self.experiment_dir = experiment_dir
         self.keep_interval = keep_interval
@@ -34,9 +32,12 @@ class CheckpointManager:
         self._last_checkpoint_epoch = 0
         self.milestone = milestone
 
-    def save(self, state: dict, is_best: bool, epoch: int):
-        need_keep = self.keep_interval is not None and epoch % self.keep_interval == 0 and epoch > self.milestone
-        need_save = is_best or need_keep or self._last_checkpoint_epoch + self.save_interval <= epoch
+    def save(self, state: dict, is_best: bool, step: int):
+        if torch.distributed.is_initialized() and torch.distributed.get_rank() > 0:
+            return
+
+        need_keep = self.keep_interval is not None and step % self.keep_interval == 0 and step > self.milestone
+        need_save = is_best or need_keep or self._last_checkpoint_step + self.save_interval <= step
 
         if not need_save:
             return
@@ -55,7 +56,7 @@ class CheckpointManager:
             raise
         temp_checkpoint_path.rename(checkpoint_path)
         logger.info('Checkpoint saved')
-        self._last_checkpoint_epoch = epoch
+        self._last_checkpoint_step = step
 
         if is_best:
             model_best_path = self.experiment_dir / BEST_MODEL_FILENAME
@@ -65,6 +66,6 @@ class CheckpointManager:
             os.link(checkpoint_path, model_best_path)
 
         if need_keep:
-            keep_path = self.experiment_dir / f'checkpoint_epoch_{epoch}.pth.tar'
+            keep_path = self.experiment_dir / f'checkpoint_step_{step}.pth.tar'
             logger.info('Keep checkpoint "%s"', keep_path)
             os.link(checkpoint_path, keep_path)
