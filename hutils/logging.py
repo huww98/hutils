@@ -62,7 +62,7 @@ def log_runtime_env():
 def log_code_version():
     import subprocess
     try:
-        git_desc = subprocess.run(['git', 'describe', '--always', '--dirty', '--tags'], capture_output=True, text=True)
+        git_desc = subprocess.run(['git', 'describe', '--always', '--dirty', '--long'], capture_output=True, text=True)
     except FileNotFoundError:
         logger.warn('git not installed, will not record code version.')
 
