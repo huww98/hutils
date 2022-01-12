@@ -71,10 +71,11 @@ def resolve_runtime_env(args):
                 f'GPU {",".join(args.gpus)} requested, but only {device_count} GPUs available.')
 
     if (not (args.cont or args.test) and
-            args.experiment_dir is not None and
             args.experiment_dir.exists() and
             (args.experiment_dir / CHECKPOINT_FILENAME).exists()):
-        if not args.force:
+        if args.force:
+            print(f'WARNING: previous checkpoint may be overwrite.')
+        else:
             raise RuntimeError(
                 f'Experiment directory {args.experiment_dir} exists and contains previous checkpoint. '
                 'Pass "--force" to continue'
@@ -92,7 +93,7 @@ def resolve_runtime_env(args):
             raise RuntimeError(f'Attempt to test but checkpoint {expected_cp} does not exists')
         args.load_checkpoint = expected_cp
 
-    if args.experiment_dir is not None and args.run_dir is None:
+    if args.run_dir is None:
         run_id = -1
         if args.experiment_dir.exists():
             for previous_runs in args.experiment_dir.iterdir():
