@@ -13,7 +13,7 @@ TQDM_DEFAULTS = {
 
 def tqdm(*args, **kwargs):
     new_kwargs = {
-        'disable': None if torch.distributed.is_initialized() and torch.distributed.get_rank() == 0 else True,
+        'disable': None if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0 else True,
     }
     new_kwargs.update(TQDM_DEFAULTS)
     new_kwargs.update(kwargs)
