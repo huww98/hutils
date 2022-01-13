@@ -1,7 +1,9 @@
-from typing import AsyncIterable, Iterable
+from typing import Sequence, TypeVar, AsyncIterable, AsyncIterator, Iterable, Union
 import asyncio
 
-class SubAsyncIterable:
+T = TypeVar('T')
+
+class SubAsyncIterable(AsyncIterable[T]):
     def __init__(self):
         self.waiting = asyncio.Event()
         self.has_next = asyncio.Event()
@@ -15,7 +17,7 @@ class SubAsyncIterable:
         self.has_next.set()
     def __aiter__(self):
         return self
-    async def __anext__(self):
+    async def __anext__(self) -> T:
         self.waiting.set()
         await self.has_next.wait()
         self.has_next.clear()
@@ -25,17 +27,27 @@ class SubAsyncIterable:
         self.element = None
         return e
 
-async def asplit(aiter: AsyncIterable[Iterable]):
+async def to_async(iterator: Iterable[T]) -> AsyncIterator[T]:
+    for i in iterator:
+        yield i
+
+def ensure_async(iterator: Union[AsyncIterable[T], Iterable[T]]):
+    if isinstance(iterator, Iterable):
+        return to_async(iterator)
+    return iterator.__aiter__()
+
+async def asplit(aiter: Union[AsyncIterable[Sequence], Iterable[Sequence]]):
+    aiter = ensure_async(aiter)
     es = await aiter.__anext__()
     subs = [SubAsyncIterable() for _ in range(len(es))]
 
     async def fetch_all():
-        async def new_e(e, sub):
+        async def new_e(e, sub: SubAsyncIterable):
             await sub.waiting.wait()
             sub.waiting.clear()
             sub._new_element(e)
-        def new_es(es):
-            return asyncio.wait([asyncio.create_task(new_e(e, sub)) for e, sub in zip(es, subs)])
+        def new_es(es: Sequence):
+            return asyncio.gather(*(new_e(e, sub) for e, sub in zip(es, subs)))
 
         await new_es(es)
         while True:
