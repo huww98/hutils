@@ -121,7 +121,9 @@ def resolve_runtime_env(args):
         global_distributed_init(args)
 
     logger.info("Resolved arguments: %s", args)
-    logger.info("Resolved config: %s", json.dumps(config, indent=4))
+    json_str = json.dumps(config, indent=4)
+    logger.info("Resolved config: %s", json_str)
+    (args.experiment_dir/'config.json').write_text(json_str)
     log_code_version()
 
     return args, config
