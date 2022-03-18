@@ -9,7 +9,7 @@ setup(
     description="Utilities for machine learning",
     long_description="",
     python_requires=">=3.6",
-    requires=[
+    install_requires=[
         "torch",
         "jsonnet",
     ]
