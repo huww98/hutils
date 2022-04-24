@@ -43,7 +43,7 @@ def get_argparser():
                         required=False,
                         type=Path,
                         help='Used to keep log file, code back etc. We will automatically create one if not specified.')
-    parser.add_argument('--gpus', nargs='*', default=None)
+    parser.add_argument('--gpus', nargs='*', type=int, default=None)
     parser.add_argument('--cpu', action='store_true')
     parser.add_argument('--test', action='store_true', help='Only run test')
     return parser
@@ -66,7 +66,7 @@ def resolve_runtime_env(args):
         if args.gpus is None:
             args.gpus = list(range(device_count))
 
-        if any(int(gpu) >= device_count for gpu in args.gpus):
+        if any(gpu >= device_count for gpu in args.gpus):
             raise ValueError(
                 f'GPU {",".join(args.gpus)} requested, but only {device_count} GPUs available.')
 
